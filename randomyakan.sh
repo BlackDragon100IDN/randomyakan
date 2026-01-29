@@ -6,33 +6,32 @@
 # =========================================
 
 # Auto sudo
-if [ "$EUID" -ne 0 ]; then
-    echo "🔐 Meminta akses root..."
-    exec sudo "$0" "$@"
-fi
+[ "$EUID" -ne 0 ] && exec sudo "$0" "$@"
 
-# Detect active WiFi connection
-CONN=$(nmcli -t -f NAME,TYPE,DEVICE connection show --active | grep wifi | cut -d: -f1)
+# Detect active WiFi connection (correct type filter)
+CONN=$(nmcli -t -f NAME,TYPE,DEVICE connection show --active | grep "802-11-wireless" | cut -d: -f1)
+IFACE=$(nmcli -t -f NAME,TYPE,DEVICE connection show --active | grep "802-11-wireless" | cut -d: -f3)
 
-if [ -z "$CONN" ]; then
+if [ -z "$CONN" ] || [ -z "$IFACE" ]; then
     echo "❌ Tidak ada koneksi WiFi aktif"
     exit 1
 fi
 
-echo "📡 WiFi aktif  : $CONN"
-echo "🎲 Mode       : RANDOM MAC"
-echo "🔁 Proses     : Randomisasi MAC address..."
+echo "📡 WiFi aktif   : $CONN"
+echo "📶 Interface    : $IFACE"
+echo "🎲 Mode         : RANDOM MAC"
+echo "🔁 Randomizing MAC address..."
 
 # Set random MAC
 nmcli connection modify "$CONN" wifi.cloned-mac-address random
 
 echo "🔌 Restart koneksi WiFi..."
-nmcli connection down "$CONN"
+nmcli device disconnect "$IFACE"
 sleep 2
-nmcli connection up "$CONN"
+nmcli device connect "$IFACE"
 
 echo ""
 echo "✅ SUCCESS!"
 echo "📍 MAC address sekarang:"
-ip link show wlan0 | grep link/ether
+ip link show "$IFACE" | grep link/ether
 echo "========================================="
