@@ -1,3 +1,4 @@
+bash <(cat <<'EOF'
 #!/bin/bash
 # =========================================
 # Randomyakan - WiFi MAC Randomizer (fixed universal)
@@ -37,3 +38,5 @@ nmcli device connect "$IFACE"
 
 echo "✅ SUCCESS!"
 ip link show "$IFACE" | grep link/ether
+EOF
+)
