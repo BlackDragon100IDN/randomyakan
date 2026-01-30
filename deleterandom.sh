@@ -6,8 +6,8 @@
 # - Remove randomyakan
 # - Disable random MAC (WiFi only)
 # - Set permanent MAC (WiFi only)
-# - Clear WiFi cache only
-# - Flush DNS
+# - Clear WiFi cache only (NO file delete critical)
+# - Flush DNS (no resolv.conf delete)
 # - Restart NetworkManager
 # =========================================
 
@@ -69,13 +69,13 @@ rm -rf /var/lib/NetworkManager/timestamps
 rm -rf /var/lib/NetworkManager/internal-*
 rm -rf /run/NetworkManager/*
 
-# DNS (safe)
-rm -f /etc/resolv.conf
-ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
-
 echo "✅ WiFi runtime cache cleared"
 
-echo "[6/6] 🔁 Restart NetworkManager..."
+echo "[6/6] 🌐 Flush DNS + Restart NetworkManager..."
+
+# Flush DNS only (NO file delete)
+systemd-resolve --flush-caches 2>/dev/null
+resolvectl flush-caches 2>/dev/null
 
 systemctl start systemd-resolved 2>/dev/null
 systemctl start NetworkManager
@@ -86,7 +86,7 @@ echo "✅ WIFI CLEAN SELESAI"
 echo "📶 WiFi cache cleared"
 echo "🔒 Random MAC WiFi OFF"
 echo "📡 MAC WiFi permanent"
-echo "🌐 DNS flushed"
+echo "🌐 DNS flushed (safe)"
 echo "🔁 NetworkManager restarted"
 echo "🏁 One-run script done"
 echo "========================================="
