@@ -1,26 +1,27 @@
 #!/bin/bash
 # =========================================
-# Randomyakan Cleaner + Network Cache Reset
+# Randomyakan Cleaner + Safe Network Reset
 # Author: AutoClean++
 # Function:
 # - Remove randomyakan
 # - Disable random MAC
 # - Set permanent MAC
-# - Clear network cache
-# - Reset NetworkManager state
+# - Clear network cache (SAFE)
+# - Reset NetworkManager state (SAFE)
 # - Flush DNS
-# - Restart NetworkManager only
+# - Restart NetworkManager
+# - Keep saved WiFi/Hotspot configs
 # =========================================
 
 # Auto sudo
 [ "$EUID" -ne 0 ] && exec sudo "$0" "$@"
 
 echo "========================================="
-echo "🧹 Randomyakan Cleaner + Cache Network"
+echo "🧹 Randomyakan Cleaner + SAFE Cache Reset"
 echo "⏰ $(date)"
 echo "========================================="
 
-echo "[1/8] 🔥 Menghapus file randomyakan..."
+echo "[1/7] 🔥 Menghapus file randomyakan..."
 
 rm -rf /root/randomyakan
 rm -f /usr/local/bin/randomyakan.sh
@@ -29,7 +30,7 @@ rm -f /home/*/randomyakan.sh 2>/dev/null
 
 echo "✅ Randomyakan file removed"
 
-echo "[2/8] 🔍 Scan sisa randomyakan..."
+echo "[2/7] 🔍 Scan sisa randomyakan..."
 FOUND=$(find / -iname "*randomyakan*" 2>/dev/null)
 if [ -z "$FOUND" ]; then
     echo "✅ Tidak ada sisa randomyakan"
@@ -38,7 +39,7 @@ else
     echo "$FOUND"
 fi
 
-echo "[3/8] 🔧 Disable random MAC (NetworkManager)..."
+echo "[3/7] 🔧 Disable random MAC (NetworkManager)..."
 
 # WiFi
 for c in $(nmcli -t -f NAME,TYPE connection show | grep ":wifi" | cut -d: -f1); do
@@ -57,7 +58,7 @@ done
 
 echo "✅ MAC set to permanent"
 
-echo "[4/8] 🔒 Global config anti-random..."
+echo "[4/7] 🔒 Global config anti-random..."
 cat <<EOF > /etc/NetworkManager/conf.d/00-disable-random-mac.conf
 [device]
 wifi.scan-rand-mac-address=no
@@ -70,28 +71,32 @@ EOF
 
 echo "✅ Global anti-random config applied"
 
-echo "[5/8] 🧹 Clear network cache & state..."
+echo "[5/7] 🧹 Clear network cache (SAFE MODE)..."
 
 # Stop services
 systemctl stop NetworkManager
 systemctl stop systemd-resolved 2>/dev/null
 
-# Clear NM cache/state (tanpa reset wifi radio)
-rm -rf /var/lib/NetworkManager/*
-rm -rf /etc/NetworkManager/system-connections/*
+# SAFE cache clear (TIDAK hapus saved connections)
+rm -rf /var/lib/NetworkManager/*.lease
+rm -rf /var/lib/NetworkManager/seen-bssids
+rm -rf /var/lib/NetworkManager/internal-*
+rm -rf /var/lib/NetworkManager/timestamps
+rm -rf /var/lib/NetworkManager/state
+rm -rf /run/NetworkManager/*
 
 # Reset resolv cache
 rm -f /etc/resolv.conf
 ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
 
-echo "✅ Network cache cleared"
+echo "✅ Network runtime cache cleared (SAFE)"
 
-echo "[6/8] 🌐 Flush DNS cache..."
+echo "[6/7] 🌐 Flush DNS cache..."
 systemd-resolve --flush-caches 2>/dev/null
 resolvectl flush-caches 2>/dev/null
 echo "✅ DNS cache flushed"
 
-echo "[7/8] 🔁 Restart NetworkManager..."
+echo "[7/7] 🔁 Restart NetworkManager..."
 
 systemctl start systemd-resolved 2>/dev/null
 systemctl start NetworkManager
@@ -99,19 +104,13 @@ sleep 5
 
 echo "✅ NetworkManager restarted"
 
-echo "[8/8] 🧪 Verifikasi MAC:"
-for i in /sys/class/net/*/address; do
-    IFACE=$(basename $(dirname $i))
-    MAC=$(cat $i)
-    echo " - $IFACE : $MAC"
-done
-
 echo "========================================="
-echo "✅ CLEANING SELESAI"
+echo "✅ CLEANING SELESAI (SAFE MODE)"
 echo "🔒 Randomyakan removed"
 echo "🛡️ Random MAC disabled"
 echo "📡 MAC permanent enforced"
-echo "🧹 Network cache cleared"
+echo "🧹 Cache jaringan dibersihkan"
+echo "📶 WiFi & hotspot tetap tersimpan"
 echo "🌐 DNS flushed"
 echo "🔁 NetworkManager restarted"
 echo "🏁 One-run script done"
