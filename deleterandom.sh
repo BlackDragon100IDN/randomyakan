@@ -9,7 +9,6 @@
 # - Clear WiFi cache only
 # - Flush DNS
 # - Restart NetworkManager
-# - Keep all other networks untouched
 # =========================================
 
 # Auto sudo
@@ -89,6 +88,5 @@ echo "🔒 Random MAC WiFi OFF"
 echo "📡 MAC WiFi permanent"
 echo "🌐 DNS flushed"
 echo "🔁 NetworkManager restarted"
-echo "🛡️ Ethernet/GSM/VPN aman"
 echo "🏁 One-run script done"
 echo "========================================="
